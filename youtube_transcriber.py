@@ -16,8 +16,6 @@ class OpenAIClient:
     @property
     def client(self):
         if self._client is None:
-            if self._api_key is None:
-                raise ValueError("OpenAI API key not set. Call set_api_key first.")
             self._client = OpenAI(api_key=self._api_key)
         return self._client
 
