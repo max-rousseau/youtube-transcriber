@@ -8,10 +8,10 @@ import json
 class OpenAIClient:
     _shared_state = {}
 
-    def __init__(self):
+    def __init__(self, api_key):
         self.__dict__ = self._shared_state
         self._client = None
-        self._api_key = None
+        self._api_key = api_key
 
     @property
     def client(self):
@@ -47,8 +47,7 @@ def transcribe(url, api_key, ai_audio_model, ai_chat_model):
 
     try:
         # Initialize OpenAI client
-        openai_client = OpenAIClient()
-        openai_client.set_api_key(api_key)
+        openai_client = OpenAIClient(api_key)
 
         # Transcribe audio using OpenAI Whisper API
         with open(audio_filename, "rb") as audio_file:
