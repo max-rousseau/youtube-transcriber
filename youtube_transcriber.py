@@ -10,8 +10,8 @@ class OpenAIClient:
 
     def __init__(self, api_key):
         self.__dict__ = self._shared_state
-        self._client = None
         self._api_key = api_key
+        self._client = None
 
     @property
     def client(self):
@@ -75,7 +75,7 @@ def transcript_postprocess(transcript, ai_model, openai_client):
     user_prompt = click.prompt("What would you like to do with the transcript?")
 
     system_message = (
-        "You are a helpful assistant that can analyze and process transcripts."
+        "You are a helpful assistant that can analyze and process video transcripts."
     )
     user_message = f"Please review the following transcript and respond to the user's request below.\n\n```{transcript}```\n\nUser's request: {user_prompt}"
 
