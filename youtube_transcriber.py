@@ -2,6 +2,7 @@ import click
 import os
 from pytube import YouTube
 from openai import OpenAI
+import json
 
 
 @click.command()
@@ -34,9 +35,35 @@ def transcribe(url, api_key):
             f.write(transcription.text)
 
         click.echo(f"Transcript saved to transcript.md")
+
+        # Ask user if they want to post-process the transcript
+        if click.confirm("Do you want to post-process the transcript with AI?"):
+            transcript_postprocess(transcription.text, api_key)
     finally:
         # Clean up temporary audio file
         os.remove(audio_filename)
+
+
+def transcript_postprocess(transcript, api_key):
+    """Post-process the transcript using OpenAI GPT-4."""
+    client = OpenAI(api_key=api_key)
+    
+    user_prompt = click.prompt("What would you like to do with the transcript?")
+    
+    system_message = "You are a helpful assistant that can analyze and process transcripts."
+    user_message = f"Please review the following transcript and respond to the user's request below.\n\n```{transcript}```\n\nUser's request: {user_prompt}"
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ],
+        max_tokens=4096
+    )
+    
+    print("\nAI Response:")
+    print(response.choices[0].message.content)
 
 
 if __name__ == "__main__":
