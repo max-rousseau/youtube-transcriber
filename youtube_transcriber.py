@@ -8,7 +8,9 @@ import json
 @click.command()
 @click.argument("url")
 @click.option("--api-key", envvar="OPENAI_API_KEY", help="OpenAI API Key")
-def transcribe(url, api_key):
+@click.option("--audio-model", default="whisper-1", help="OpenAI audio transcription model")
+@click.option("--ai-model", default="gpt-4", help="OpenAI AI model for post-processing")
+def transcribe(url, api_key, audio_model, ai_model):
     """Transcribe audio from a YouTube video."""
     if not api_key:
         raise click.ClickException(
@@ -26,7 +28,7 @@ def transcribe(url, api_key):
 
         with open(audio_filename, "rb") as audio_file:
             transcription = client.audio.transcriptions.create(
-                model="whisper-1", file=audio_file
+                model=audio_model, file=audio_file
             )
             print(transcription.text)
 
@@ -38,14 +40,14 @@ def transcribe(url, api_key):
 
         # Ask user if they want to post-process the transcript
         if click.confirm("Do you want to post-process the transcript with AI?"):
-            transcript_postprocess(transcription.text, api_key)
+            transcript_postprocess(transcription.text, api_key, ai_model)
     finally:
         # Clean up temporary audio file
         os.remove(audio_filename)
 
 
-def transcript_postprocess(transcript, api_key):
-    """Post-process the transcript using OpenAI GPT-4."""
+def transcript_postprocess(transcript, api_key, ai_model):
+    """Post-process the transcript using specified OpenAI model."""
     client = OpenAI(api_key=api_key)
     
     user_prompt = click.prompt("What would you like to do with the transcript?")
@@ -54,7 +56,7 @@ def transcript_postprocess(transcript, api_key):
     user_message = f"Please review the following transcript and respond to the user's request below.\n\n```{transcript}```\n\nUser's request: {user_prompt}"
     
     response = client.chat.completions.create(
-        model="gpt-4",
+        model=ai_model,
         messages=[
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message}
