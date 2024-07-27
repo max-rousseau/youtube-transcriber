@@ -11,16 +11,19 @@ class OpenAIClient:
     def __init__(self):
         self.__dict__ = self._shared_state
         self._client = None
+        self._api_key = None
 
     @property
     def client(self):
         if self._client is None:
-            raise ValueError("OpenAI client not initialized. Call set_api_key first.")
+            if self._api_key is None:
+                raise ValueError("OpenAI API key not set. Call set_api_key first.")
+            self._client = OpenAI(api_key=self._api_key)
         return self._client
 
     def set_api_key(self, api_key):
-        if self._client is None:
-            self._client = OpenAI(api_key=api_key)
+        self._api_key = api_key
+        self._client = None  # Reset client to reinitialize with new API key if needed
 
 
 @click.command()
@@ -64,16 +67,14 @@ def transcribe(url, api_key, ai_audio_model, ai_chat_model):
 
         # Ask user if they want to post-process the transcript
         if click.confirm("Do you want to post-process the transcript with AI?"):
-            transcript_postprocess(transcription.text, ai_chat_model)
+            transcript_postprocess(transcription.text, ai_chat_model, openai_client)
     finally:
         # Clean up temporary audio file
         os.remove(audio_filename)
 
 
-def transcript_postprocess(transcript, ai_model):
+def transcript_postprocess(transcript, ai_model, openai_client):
     """Post-process the transcript using specified OpenAI model."""
-    openai_client = OpenAIClient()
-
     user_prompt = click.prompt("What would you like to do with the transcript?")
 
     system_message = (
