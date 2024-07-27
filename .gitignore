@@ -1,2 +1,5 @@
 .aider*
 venv/**
+*.mp4
+*.md
+launch.json

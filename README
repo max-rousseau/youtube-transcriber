@@ -1,0 +1,1 @@
+Takes a youtube URL and saves a transcript.md file with the audio transcript. You will need to bring your own AI key for OpenAi's Whisper model. Sadly, the pytube library seems to be abandonware, i have instead used this fork https://github.com/AV3-Studio/pytube-but-working.git (which is very appropriately named)
