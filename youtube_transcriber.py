@@ -5,6 +5,24 @@ from openai import OpenAI
 import json
 
 
+class OpenAIClient:
+    _shared_state = {}
+
+    def __init__(self):
+        self.__dict__ = self._shared_state
+        self._client = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            raise ValueError("OpenAI client not initialized. Call set_api_key first.")
+        return self._client
+
+    def set_api_key(self, api_key):
+        if self._client is None:
+            self._client = OpenAI(api_key=api_key)
+
+
 @click.command()
 @click.argument("url")
 @click.option("--api-key", envvar="OPENAI_API_KEY", help="OpenAI API Key")
@@ -27,11 +45,13 @@ def transcribe(url, api_key, ai_audio_model, ai_chat_model):
     audio_filename = audio_stream.download(filename=audio_stream.default_filename)
 
     try:
-        # Transcribe audio using OpenAI Whisper API
-        client = OpenAI(api_key=api_key)
+        # Initialize OpenAI client
+        openai_client = OpenAIClient()
+        openai_client.set_api_key(api_key)
 
+        # Transcribe audio using OpenAI Whisper API
         with open(audio_filename, "rb") as audio_file:
-            transcription = client.audio.transcriptions.create(
+            transcription = openai_client.client.audio.transcriptions.create(
                 model=ai_audio_model, file=audio_file
             )
             print(transcription.text)
@@ -44,15 +64,15 @@ def transcribe(url, api_key, ai_audio_model, ai_chat_model):
 
         # Ask user if they want to post-process the transcript
         if click.confirm("Do you want to post-process the transcript with AI?"):
-            transcript_postprocess(transcription.text, api_key, ai_chat_model)
+            transcript_postprocess(transcription.text, ai_chat_model)
     finally:
         # Clean up temporary audio file
         os.remove(audio_filename)
 
 
-def transcript_postprocess(transcript, api_key, ai_model):
+def transcript_postprocess(transcript, ai_model):
     """Post-process the transcript using specified OpenAI model."""
-    client = OpenAI(api_key=api_key)
+    openai_client = OpenAIClient()
 
     user_prompt = click.prompt("What would you like to do with the transcript?")
 
@@ -61,7 +81,7 @@ def transcript_postprocess(transcript, api_key, ai_model):
     )
     user_message = f"Please review the following transcript and respond to the user's request below.\n\n```{transcript}```\n\nUser's request: {user_prompt}"
 
-    response = client.chat.completions.create(
+    response = openai_client.client.chat.completions.create(
         model=ai_model,
         messages=[
             {"role": "system", "content": system_message},
