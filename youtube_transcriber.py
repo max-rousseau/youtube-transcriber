@@ -8,9 +8,13 @@ import json
 @click.command()
 @click.argument("url")
 @click.option("--api-key", envvar="OPENAI_API_KEY", help="OpenAI API Key")
-@click.option("--audio-model", default="whisper-1", help="OpenAI audio transcription model")
-@click.option("--ai-model", default="gpt-4", help="OpenAI AI model for post-processing")
-def transcribe(url, api_key, audio_model, ai_model):
+@click.option(
+    "--ai-audio-model", default="whisper-1", help="OpenAI audio transcription model"
+)
+@click.option(
+    "--ai-chat-model", default="gpt-4", help="OpenAI AI chat model for post-processing"
+)
+def transcribe(url, api_key, ai_audio_model, ai_chat_model):
     """Transcribe audio from a YouTube video."""
     if not api_key:
         raise click.ClickException(
@@ -28,7 +32,7 @@ def transcribe(url, api_key, audio_model, ai_model):
 
         with open(audio_filename, "rb") as audio_file:
             transcription = client.audio.transcriptions.create(
-                model=audio_model, file=audio_file
+                model=ai_audio_model, file=audio_file
             )
             print(transcription.text)
 
@@ -40,7 +44,7 @@ def transcribe(url, api_key, audio_model, ai_model):
 
         # Ask user if they want to post-process the transcript
         if click.confirm("Do you want to post-process the transcript with AI?"):
-            transcript_postprocess(transcription.text, api_key, ai_model)
+            transcript_postprocess(transcription.text, api_key, ai_chat_model)
     finally:
         # Clean up temporary audio file
         os.remove(audio_filename)
@@ -49,21 +53,23 @@ def transcribe(url, api_key, audio_model, ai_model):
 def transcript_postprocess(transcript, api_key, ai_model):
     """Post-process the transcript using specified OpenAI model."""
     client = OpenAI(api_key=api_key)
-    
+
     user_prompt = click.prompt("What would you like to do with the transcript?")
-    
-    system_message = "You are a helpful assistant that can analyze and process transcripts."
+
+    system_message = (
+        "You are a helpful assistant that can analyze and process transcripts."
+    )
     user_message = f"Please review the following transcript and respond to the user's request below.\n\n```{transcript}```\n\nUser's request: {user_prompt}"
-    
+
     response = client.chat.completions.create(
         model=ai_model,
         messages=[
             {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message}
+            {"role": "user", "content": user_message},
         ],
-        max_tokens=4096
+        max_tokens=4096,
     )
-    
+
     print("\nAI Response:")
     print(response.choices[0].message.content)
 
